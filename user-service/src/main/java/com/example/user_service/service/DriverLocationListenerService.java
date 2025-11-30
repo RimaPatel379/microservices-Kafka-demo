@@ -15,23 +15,33 @@ public class DriverLocationListenerService {
 
     // In-memory store for the latest locations
     private final DriverLocationStore locationStore;
-
-    // Json DriverLocation
+    /**
+     * Listener for the "driver-location-updates" topic.
+     * This uses the JSON → DriverLocation deserializer.
+     *
+     * groupId in annotation overrides config if specified, but here we keep
+     * it consistent with the consumer factory group id.
+     */
     @KafkaListener(
             topics = "driver-location-updates",
             groupId = "user-service-group",
             containerFactory = "driverLocationKafkaListenerContainerFactory"
     )
     public void consumeLocation(DriverLocation location) {
-        log.info("Received location for {}: lat={}, lon={}",
+        log.info("Received location (driver-location-updates) for {}: lat={}, lon={}",
                 location.getDriverId(),
                 location.getLatitude(),
                 location.getLongitude());
 
+        // Update our in-memory latest location cache
         locationStore.updateLocation(location);
     }
 
-
+    /**
+     * Listener for the "cab-location" topic.
+     * This also receives DriverLocation JSON messages.
+     * Using a different group id means this listener has its own offset tracking.
+     */
     @KafkaListener(
             topics = "cab-location",
             groupId = "user-group",
@@ -43,7 +53,7 @@ public class DriverLocationListenerService {
                 location.getLatitude(),
                 location.getLongitude());
 
-        // you can also store these if you want
+        // Optionally store or process differently; here we reuse the same store.
         locationStore.updateLocation(location);
     }
 }

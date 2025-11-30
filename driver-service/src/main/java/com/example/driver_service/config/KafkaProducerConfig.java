@@ -43,51 +43,31 @@ public class KafkaProducerConfig {
         return new KafkaTemplate<>(producerFactory());
     }
 
-    /**
-     * ProducerFactory for sending raw String messages (used for cab-location topic).
-     * - Key: String
-     * - Value: String
-     */
-    @Bean
-    public ProducerFactory<String, Object> producerFactory2() {
-        Map<String, Object> config = new HashMap<>();
-        // Kafka broker address
-        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        // Key serializer: String
-        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        // Value serializer: also String (no JSON)
-        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        return new DefaultKafkaProducerFactory<>(config);
-    }
+
+
 
     /**
-     * KafkaTemplate using String serializers (used for plain string messages).
-     */
-    @Bean
-    public KafkaTemplate<String, Object> kafkaTemplate2() {
-        return new KafkaTemplate<>(producerFactory2());
-    }
-
-    /**
-     * Create topic for driver-location-updates if it doesn't exist.
-     * This is used to publish structured DriverLocation JSON events.
+     * Topic for driver location updates.
+     * This bean will auto-create the topic if Kafka Admin is enabled.
      */
     @Bean
     public NewTopic driverLocationTopic() {
         return TopicBuilder.name(AppConstant.DRIVER_LOCATION_TOPIC)
-                .partitions(3)
-                .replicas(1)
+                .partitions(3) // For scalability and parallelism
+                .replicas(1)   // Single replica for local dev
                 .build();
     }
 
     /**
-     * Create topic for cab-location.
-     * This topic is used to send random location string updates.
+     * Topic for "cab-location" events.
+     * In this demo, we also send DriverLocation JSON to this topic.
      */
     @Bean
-    public NewTopic topic() {
+    public NewTopic cabLocationTopic() {
         return TopicBuilder
                 .name(AppConstant.CAB_LOCATION)
+                .partitions(3)
+                .replicas(1)
                 .build();
     }
 }
